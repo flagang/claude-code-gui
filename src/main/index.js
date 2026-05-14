@@ -124,6 +124,36 @@ function registerIpc() {
 
     return history
   })
+
+  // Get historical messages for a specific session from ~/.claude/history.jsonl
+  ipcMain.handle(ch.HISTORY_GET_MESSAGES, (event, sessionId) => {
+    const historyFile = path.join(os.homedir(), '.claude', 'history.jsonl')
+    const messages = []
+
+    try {
+      if (!fs.existsSync(historyFile)) {
+        return []
+      }
+
+      const content = fs.readFileSync(historyFile, 'utf8')
+      const lines = content.split('\n').filter(line => line.trim())
+
+      for (const line of lines) {
+        try {
+          const data = JSON.parse(line)
+          if (data.sessionId === sessionId && data.display) {
+            messages.push(data.display)
+          }
+        } catch (e) {
+          continue
+        }
+      }
+    } catch (e) {
+      return []
+    }
+
+    return messages
+  })
 }
 
 app.whenReady().then(() => {

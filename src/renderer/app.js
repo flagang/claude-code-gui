@@ -85,6 +85,15 @@
   async function spawnSession(options) {
     options = options || {}
     options.cwd = options.cwd || defaultCwd()
+    const historySessionId = options.historySessionId
+
+    // Check if we already have a session with this cwd - switch to it instead of duplicating
+    for (const [id, session] of sessions.entries()) {
+      if (session.meta.cwd === options.cwd) {
+        switchSession(id)
+        return id
+      }
+    }
 
     const meta = await window.api.spawnSession(options)
     const id = meta.id
@@ -124,6 +133,26 @@
 
     // Resize PTY
     window.api.ptyResize(id, term.cols, term.rows)
+
+    // If we have a history session id, load and print history
+    if (historySessionId) {
+      setTimeout(async () => {
+        try {
+          const messages = await window.api.getHistoryMessages(historySessionId)
+          if (messages.length > 0) {
+            term.write('\x1b[1;30m' + '─'.repeat(Math.min(term.cols || 60, 80)) + '\x1b[0m\r\n')
+            term.write('\x1b[90m[恢复历史对话 - 共' + messages.length + '条消息]\x1b[0m\r\n')
+            messages.forEach((msg, index) => {
+              // Simple formatting: user input in gray
+              term.write('\x1b[90m❯ ' + msg + '\x1b[0m\r\n')
+            })
+            term.write('\x1b[1;30m' + '─'.repeat(Math.min(term.cols || 60, 80)) + '\x1b[0m\r\n\r\n')
+          }
+        } catch (e) {
+          console.error('Failed to load history messages:', e)
+        }
+      }, 300)
+    }
 
     return id
   }
@@ -310,7 +339,10 @@
 
     item.addEventListener('click', function() {
       if (history.cwd) {
-        spawnSession({ cwd: history.cwd })
+        spawnSession({
+          cwd: history.cwd,
+          historySessionId: history.sessionId
+        })
       }
     })
 

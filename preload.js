@@ -5,6 +5,7 @@ const ch = {
   SESSION_KILL: 'session:kill',
   SESSION_LIST: 'session:list',
   HISTORY_LIST: 'history:list',
+  HISTORY_GET_MESSAGES: 'history:get-messages',
   PTY_WRITE: 'pty:write',
   PTY_RESIZE: 'pty:resize',
   PTY_DATA: 'pty:data',
@@ -16,6 +17,7 @@ contextBridge.exposeInMainWorld('api', {
   killSession: (id) => ipcRenderer.invoke(ch.SESSION_KILL, id),
   listSessions: () => ipcRenderer.invoke(ch.SESSION_LIST),
   listHistory: () => ipcRenderer.invoke(ch.HISTORY_LIST),
+  getHistoryMessages: (sessionId) => ipcRenderer.invoke(ch.HISTORY_GET_MESSAGES, sessionId),
 
   ptyWrite: (id, data) => ipcRenderer.send(ch.PTY_WRITE, id, data),
   ptyResize: (id, cols, rows) => ipcRenderer.send(ch.PTY_RESIZE, id, cols, rows),

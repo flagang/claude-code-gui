@@ -6,6 +6,7 @@ module.exports = {
   SESSION_LIST: 'session:list',
   // History discovery
   HISTORY_LIST: 'history:list',
+  HISTORY_GET_MESSAGES: 'history:get-messages',
   // PTY data flow
   PTY_WRITE: 'pty:write',
   PTY_RESIZE: 'pty:resize',
