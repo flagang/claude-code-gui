@@ -1,0 +1,43 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Read(//Users/fenglingang/.nvm/**)",
+      "Read(//Users/fenglingang/.nvm/alias/**)",
+      "Bash([ -s \"$HOME/.nvm/nvm.sh\" ])",
+      "Bash(grep -n \"nvm\" ~/.zshrc 2>/dev/null || echo \"no nvm config found\")",
+      "Read(//Users/fenglingang/**)",
+      "Bash(pkill -f \"Electron\")",
+      "Bash(pkill -f \"claude-code-gui\")",
+      "Bash(pkill -f \"electron/install.js\")",
+      "Bash(pkill -f \"electron .\")",
+      "Bash(pkill -f \"electron\")",
+      "Bash(/Users/fenglingang/.nvm/versions/node/v22.22.2/bin/node /Users/fenglingang/project/claude-code-gui/node_modules/.bin/electron .)",
+      "Bash(export ELECTRON_MIRROR=\"https://npmmirror.com/mirrors/electron/\")",
+      "Bash(/Users/fenglingang/.nvm/versions/node/v22.22.2/bin/npm install *)",
+      "Bash(/Users/fenglingang/.nvm/versions/node/v22.22.2/bin/npm start *)",
+      "Bash(/Users/fenglingang/.nvm/versions/node/v22.22.2/bin/node -e \"const e = require\\('./node_modules/electron'\\); console.log\\('keys:', Object.keys\\(e\\)\\); console.log\\('app:', typeof e.app\\);\")",
+      "Bash(/Users/fenglingang/project/claude-code-gui/node_modules/electron/dist/Electron.app/Contents/MacOS/Eron .)",
+      "Bash(/Users/fenglingang/project/claude-code-gui/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron /Users/fenglingang/project/claude-code-gui)",
+      "Bash(kill %1)",
+      "Bash(wait %1)",
+      "Bash(/Users/fenglingang/project/claude-code-gui/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron -e \"console.log\\('process.type:', process.type\\); const e = require\\('electron'\\); console.log\\('typeof:', typeof e\\); console.log\\('keys:', Object.keys\\(e\\).slice\\(0,10\\)\\)\")",
+      "Bash(env)",
+      "Bash(unset ELECTRON_RUN_AS_NODE)",
+      "Bash(screencapture -x /tmp/electron-screenshot.png)",
+      "Bash(pkill -f \"Electron.*claude-code-gui\")",
+      "Bash(pkill -f \"electron \\\\.\")",
+      "Bash(lsof -ti:9222)",
+      "Bash(xargs kill)",
+      "Bash(curl -s http://127.0.0.1:9333/json)",
+      "mcp__plugin_chrome-devtools-mcp_chrome-devtools__take_snapshot",
+      "mcp__plugin_chrome-devtools-mcp_chrome-devtools__click",
+      "Bash(python3 -c ' *)",
+      "Bash(git init *)",
+      "Bash(git add *)"
+    ],
+    "additionalDirectories": [
+      "/Users/fenglingang"
+    ]
+  }
+}
