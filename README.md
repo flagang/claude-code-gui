@@ -1,5 +1,5 @@
 # Claude Code GUI
-
+-该项目使用AI创建
 一个 macOS 原生风格的 Claude Code 桌面客户端，为 Claude Code CLI 提供图形化多会话管理界面。
 
 ## ✅ 已实现功能
@@ -49,8 +49,11 @@ npm install
 # 重编译 node-pty 适配 Electron（只需要做一次）
 npx @electron/rebuild
 
-# 启动应用
+# 启动应用（正式模式，不打开DevTools）
 npm start
+
+# 开发模式（打开DevTools并启用远程调试）
+npm run dev
 ```
 
 ## 项目结构
@@ -90,12 +93,15 @@ claude-code-gui/
 
 ## 调试
 
-应用启动时自动打开 DevTools，并监听 `9333` 端口供远程调试：
+开发模式 (`npm run dev`) 启动时自动打开 DevTools，并监听 `9333` 端口供远程调试：
 
 ```bash
+npm run dev
 # DevTools 访问：http://127.0.0.1:9333
 # 选择 "Claude Code GUI" 打开检查器
 ```
+
+正式模式 (`npm start`) 不开启调试功能和 DevTools。
 
 ## 许可证
 

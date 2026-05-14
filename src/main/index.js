@@ -4,6 +4,7 @@ const ptyManager = require('./pty')
 const ch = require('../shared/channels')
 
 let mainWindow
+const isDev = process.argv.some(arg => arg.includes('--remote-debugging-port'))
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -26,7 +27,9 @@ function createWindow() {
 
   mainWindow.once('ready-to-show', () => {
     mainWindow.show()
-    mainWindow.webContents.openDevTools()
+    if (isDev) {
+      mainWindow.webContents.openDevTools()
+    }
   })
 
   mainWindow.on('closed', () => {
