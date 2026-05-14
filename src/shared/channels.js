@@ -4,6 +4,8 @@ module.exports = {
   SESSION_SPAWN: 'session:spawn',
   SESSION_KILL: 'session:kill',
   SESSION_LIST: 'session:list',
+  // History discovery
+  HISTORY_LIST: 'history:list',
   // PTY data flow
   PTY_WRITE: 'pty:write',
   PTY_RESIZE: 'pty:resize',

@@ -1,5 +1,7 @@
 const { app, BrowserWindow, ipcMain } = require('electron')
 const path = require('path')
+const fs = require('fs')
+const os = require('os')
 const ptyManager = require('./pty')
 const ch = require('../shared/channels')
 
@@ -78,6 +80,49 @@ function registerIpc() {
   // Resize PTY
   ipcMain.on(ch.PTY_RESIZE, (event, id, cols, rows) => {
     ptyManager.resizeSession(id, cols, rows)
+  })
+
+  // List historical sessions from ~/.claude/sessions/
+  ipcMain.handle(ch.HISTORY_LIST, () => {
+    const historyDir = path.join(os.homedir(), '.claude', 'sessions')
+    const history = []
+
+    try {
+      if (!fs.existsSync(historyDir)) {
+        return []
+      }
+
+      const files = fs.readdirSync(historyDir)
+      for (const file of files) {
+        if (!file.endsWith('.json')) continue
+
+        try {
+          const filePath = path.join(historyDir, file)
+          const content = fs.readFileSync(filePath, 'utf8')
+          const data = JSON.parse(content)
+
+          history.push({
+            pid: data.pid,
+            sessionId: data.sessionId,
+            cwd: data.cwd || '',
+            startedAt: data.startedAt || 0,
+            version: data.version || '',
+            entrypoint: data.entrypoint || 'cli',
+          })
+        } catch (e) {
+          // Skip invalid JSON files
+          continue
+        }
+      }
+
+      // Sort by startedAt, newest first
+      history.sort((a, b) => (b.startedAt || 0) - (a.startedAt || 0))
+    } catch (e) {
+      // If directory not accessible, return empty
+      return []
+    }
+
+    return history
   })
 }
 

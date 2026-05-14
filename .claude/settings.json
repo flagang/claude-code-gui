@@ -34,7 +34,12 @@
       "mcp__plugin_chrome-devtools-mcp_chrome-devtools__click",
       "Bash(python3 -c ' *)",
       "Bash(git init *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit -m 'Initial commit: Claude Code GUI - complete core functionality *)",
+      "Bash(git remote *)",
+      "Bash(git branch *)",
+      "Bash(git push *)",
+      "Bash(git config *)"
     ],
     "additionalDirectories": [
       "/Users/fenglingang"

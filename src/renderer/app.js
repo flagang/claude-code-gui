@@ -257,6 +257,66 @@
     }, 100)
   })
 
+  // ── Format date ──
+  function formatHistoryDate(timestamp) {
+    if (!timestamp) return ''
+    const date = new Date(timestamp)
+    const now = new Date()
+    const diff = now.getTime() - date.getTime()
+
+    // Within last 24 hours: show time
+    if (diff < 24 * 60 * 60 * 1000) {
+      return date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+    }
+    // Otherwise: show date
+    return date.toLocaleDateString([], {month: 'short', day: 'numeric'})
+  }
+
+  // ── Load and render history ──
+  async function loadHistory() {
+    var historyList = $('.history-list')
+    if (!historyList) return
+
+    try {
+      const history = await window.api.listHistory()
+      if (!history || history.length === 0) {
+        historyList.innerHTML = '<div style="padding: 12px; font-size: 11px; color: var(--text-muted); text-align: center;">No history found</div>'
+        return
+      }
+
+      historyList.innerHTML = ''
+      history.forEach(function(item) {
+        addHistoryItem(item)
+      })
+    } catch (e) {
+      console.error('Failed to load history:', e)
+    }
+  }
+
+  // ── Add history item to sidebar ──
+  function addHistoryItem(history) {
+    var list = $('.history-list')
+    var item = document.createElement('div')
+    item.className = 'history-item'
+    item.dataset.cwd = history.cwd || ''
+
+    var dir = shortPath(history.cwd || '')
+    var name = history.cwd ? history.cwd.split('/').pop() : 'unknown'
+    var date = formatHistoryDate(history.startedAt)
+
+    item.innerHTML =
+      '<div class="history-cwd">' + name + '</div>' +
+      '<div class="history-meta">' + dir + ' &middot; ' + date + '</div>'
+
+    item.addEventListener('click', function() {
+      if (history.cwd) {
+        spawnSession({ cwd: history.cwd })
+      }
+    })
+
+    list.appendChild(item)
+  }
+
   // ── Init ──
   document.addEventListener('DOMContentLoaded', function() {
     // PTY data -> terminal
@@ -292,6 +352,9 @@
 
     // Set default cwd from preload
     window._defaultCwd = window.api.defaultCwd || '~'
+
+    // Load history
+    loadHistory()
   })
 
 })()
