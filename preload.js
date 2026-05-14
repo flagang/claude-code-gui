@@ -6,6 +6,7 @@ const ch = {
   SESSION_LIST: 'session:list',
   HISTORY_LIST: 'history:list',
   HISTORY_GET_MESSAGES: 'history:get-messages',
+  HISTORY_DELETE: 'history:delete',
   PTY_WRITE: 'pty:write',
   PTY_RESIZE: 'pty:resize',
   PTY_DATA: 'pty:data',
@@ -18,6 +19,7 @@ contextBridge.exposeInMainWorld('api', {
   listSessions: () => ipcRenderer.invoke(ch.SESSION_LIST),
   listHistory: () => ipcRenderer.invoke(ch.HISTORY_LIST),
   getHistoryMessages: (sessionId) => ipcRenderer.invoke(ch.HISTORY_GET_MESSAGES, sessionId),
+  deleteHistory: (filename) => ipcRenderer.invoke(ch.HISTORY_DELETE, filename),
 
   ptyWrite: (id, data) => ipcRenderer.send(ch.PTY_WRITE, id, data),
   ptyResize: (id, cols, rows) => ipcRenderer.send(ch.PTY_RESIZE, id, cols, rows),

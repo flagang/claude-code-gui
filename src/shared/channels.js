@@ -7,6 +7,7 @@ module.exports = {
   // History discovery
   HISTORY_LIST: 'history:list',
   HISTORY_GET_MESSAGES: 'history:get-messages',
+  HISTORY_DELETE: 'history:delete',
   // PTY data flow
   PTY_WRITE: 'pty:write',
   PTY_RESIZE: 'pty:resize',

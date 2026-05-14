@@ -154,6 +154,20 @@ function registerIpc() {
 
     return messages
   })
+
+  // Delete a historical session file
+  ipcMain.handle(ch.HISTORY_DELETE, (event, filename) => {
+    const historyFile = path.join(os.homedir(), '.claude', 'sessions', filename)
+    try {
+      if (fs.existsSync(historyFile)) {
+        fs.unlinkSync(historyFile)
+        return { success: true }
+      }
+      return { success: false, error: 'File not found' }
+    } catch (e) {
+      return { success: false, error: e.message }
+    }
+  })
 }
 
 app.whenReady().then(() => {

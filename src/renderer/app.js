@@ -332,17 +332,36 @@
     var dir = shortPath(history.cwd || '')
     var name = history.cwd ? history.cwd.split('/').pop() : 'unknown'
     var date = formatHistoryDate(history.startedAt)
+    var filename = history.pid + '.json'
 
     item.innerHTML =
       '<div class="history-cwd">' + name + '</div>' +
-      '<div class="history-meta">' + dir + ' &middot; ' + date + '</div>'
+      '<div class="history-meta">' + dir + ' &middot; ' + date + '</div>' +
+      '<span class="history-delete" title="Delete">×</span>'
 
-    item.addEventListener('click', function() {
-      if (history.cwd) {
+    // Click on body to open session
+    item.addEventListener('click', function(e) {
+      if (!e.target.classList.contains('history-delete') && history.cwd) {
         spawnSession({
           cwd: history.cwd,
           historySessionId: history.sessionId
         })
+      }
+    })
+
+    // Delete button
+    var deleteBtn = item.querySelector('.history-delete')
+    deleteBtn.addEventListener('click', async function(e) {
+      e.stopPropagation()
+      if (!confirm('确认删除此历史会话吗？\n\n' + dir + ' (' + name + ')')) {
+        return
+      }
+      try {
+        await window.api.deleteHistory(filename)
+        item.remove()
+      } catch (e) {
+        console.error('Failed to delete history:', e)
+        alert('删除失败: ' + e.message)
       }
     })
 
