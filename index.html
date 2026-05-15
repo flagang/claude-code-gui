@@ -150,16 +150,17 @@
       flex: 1;
       overflow-y: auto;
       padding: 8px;
-      min-height: 80px;
+      min-height: 200px;
       max-height: none;
     }
 
     .history-item {
       position: relative;
-      padding: 8px 30px 8px 10px;
+      padding: 10px 30px 10px 10px;
       border-radius: var(--radius);
       transition: background 0.15s;
-      margin-bottom: 2px;
+      margin-bottom: 4px;
+      min-height: 44px;
     }
     .history-item:hover { background: var(--bg-hover); }
     .history-item.active { background: var(--bg-active); }
@@ -198,6 +199,91 @@
     .history-delete:hover {
       background: var(--red);
       color: white;
+    }
+
+    .history-title {
+      font-size: 12px;
+      font-weight: 500;
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding-left: 18px;
+      position: relative;
+    }
+
+    .history-model-dot {
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    .history-cwd {
+      font-size: 12px;
+      font-weight: 500;
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ── Project Grouping (二级菜单) ── */
+    .project-group {
+      margin-bottom: 4px;
+    }
+    .project-header {
+      display: flex;
+      align-items: center;
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: background 0.15s;
+      user-select: none;
+    }
+    .project-header:hover {
+      background: var(--bg-hover);
+    }
+    .project-toggle {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-right: 6px;
+      transition: transform 0.15s;
+      width: 12px;
+    }
+    .project-group.collapsed .project-toggle {
+      transform: rotate(-90deg);
+    }
+    .project-group.expanded .project-toggle {
+      transform: rotate(0deg);
+    }
+    .project-name {
+      flex: 1;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .project-count {
+      font-size: 10px;
+      color: var(--text-muted);
+      background: var(--bg-hover);
+      padding: 2px 6px;
+      border-radius: 10px;
+      min-width: 18px;
+      text-align: center;
+    }
+    .project-sessions {
+      padding-left: 12px;
+      overflow: hidden;
+    }
+    .project-group.collapsed .project-sessions {
+      display: none;
+    }
+    .project-group.expanded .project-sessions {
+      display: block;
     }
 
     .sidebar-footer {
@@ -450,14 +536,8 @@
     <!-- Sidebar -->
     <div class="sidebar">
       <div class="sidebar-header">
-        <h2>Active Sessions</h2>
+        <h2>History</h2>
       </div>
-      <div class="session-list-container">
-        <div class="session-list">
-          <!-- Dynamic session items will be added here -->
-        </div>
-      </div>
-      <div class="sidebar-section-title">History</div>
       <div class="history-list-container">
         <div class="history-list">
           <!-- Dynamic history items will be added here -->

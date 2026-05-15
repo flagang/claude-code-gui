@@ -9,36 +9,38 @@ function spawnSession(id, options = {}) {
   const model = options.model || ''
   const resume = options.resume || ''
 
-  let args = []
-  if (model) args.push('--model', model)
-  if (resume) args.push('--resume', resume)
+  // 日志输出
+  if (resume) {
+    console.log(`[SESSION ${id}] 恢复会话: ${resume}`)
+    console.log(`[SESSION ${id}] 工作目录: ${cwd}`)
+  }
 
   const shell = process.env.SHELL || '/bin/zsh'
   const env = { ...process.env }
 
-  // If claude command exists, use it; otherwise fall back to shell
-  const command = 'claude'
-  const finalArgs = args.length > 0 ? args : []
-
-  let ptyProcess
-  try {
-    ptyProcess = pty.spawn(command, finalArgs, {
-      name: 'xterm-256color',
-      cols: options.cols || 80,
-      rows: options.rows || 24,
-      cwd,
-      env,
-    })
-  } catch {
-    // Fallback to shell if claude not found
-    ptyProcess = pty.spawn(shell, [], {
-      name: 'xterm-256color',
-      cols: options.cols || 80,
-      rows: options.rows || 24,
-      cwd,
-      env,
-    })
+  // 构建命令：先 cd 到目录，然后运行 claude
+  let commandParts = []
+  if (cwd) {
+    // 转义目录路径中的空格和特殊字符
+    const escapedCwd = cwd.replace(/(["'$`\\])/g, '\\$1')
+    commandParts.push(`cd "${escapedCwd}"`)
   }
+
+  let claudeCmd = 'claude'
+  if (model) claudeCmd += ` --model ${model}`
+  if (resume) claudeCmd += ` --resume ${resume}`
+  commandParts.push(claudeCmd)
+
+  const fullCommand = commandParts.join(' && ')
+
+  // 生成 shell 并执行命令
+  const ptyProcess = pty.spawn(shell, ['-c', fullCommand], {
+    name: 'xterm-256color',
+    cols: options.cols || 80,
+    rows: options.rows || 24,
+    cwd: os.homedir(), // 初始从 home 开始，然后 cd 到目标目录
+    env,
+  })
 
   const session = {
     id,

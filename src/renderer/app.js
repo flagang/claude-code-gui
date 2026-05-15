@@ -86,12 +86,19 @@
     options = options || {}
     options.cwd = options.cwd || defaultCwd()
     const historySessionId = options.historySessionId
+    // Resume existing Claude session from history
+    if (historySessionId) {
+      options.resume = historySessionId
+    }
 
-    // Check if we already have a session with this cwd - switch to it instead of duplicating
-    for (const [id, session] of sessions.entries()) {
-      if (session.meta.cwd === options.cwd) {
-        switchSession(id)
-        return id
+    // If this exact history session is already open, just switch to it
+    // Allow multiple sessions with the same cwd (different history sessions)
+    if (historySessionId) {
+      for (const [id, session] of sessions.entries()) {
+        if (session.meta.historySessionId === historySessionId) {
+          switchSession(id)
+          return id
+        }
       }
     }
 
@@ -121,12 +128,12 @@
     })
 
     // Store session
+    meta.historySessionId = historySessionId
     sessions.set(id, { terminal: term, element: container, meta: meta })
 
-    // Add tab & sidebar
+    // Add tab
     const name = options.name || meta.cwd.split('/').pop() || 'session'
     addTab(id, name)
-    addSidebarItem(id, name, meta)
 
     // Switch to it
     switchSession(id)
@@ -148,6 +155,8 @@
             })
             term.write('\x1b[1;30m' + '─'.repeat(Math.min(term.cols || 60, 80)) + '\x1b[0m\r\n\r\n')
           }
+          // Refocus terminal after writing history
+          term.focus()
         } catch (e) {
           console.error('Failed to load history messages:', e)
         }
@@ -173,11 +182,6 @@
     // Update tabs
     $$('.tab').forEach(function(tab) {
       tab.classList.toggle('active', tab.dataset.sessionId === id)
-    })
-
-    // Update sidebar
-    $$('.session-item').forEach(function(item) {
-      item.classList.toggle('active', item.dataset.sessionId === id)
     })
 
     // Update status bar
@@ -212,10 +216,6 @@
     var tab = $(`.tab[data-session-id="${id}"]`)
     if (tab) tab.remove()
 
-    // Remove sidebar
-    var item = $(`.session-item[data-session-id="${id}"]`)
-    if (item) item.remove()
-
     // Switch away
     if (activeSessionId === id) {
       var remaining = Array.from(sessions.keys())
@@ -248,23 +248,6 @@
     tabs.appendChild(tab)
   }
 
-  // ── Sidebar UI ──
-  function addSidebarItem(id, name, meta) {
-    var list = $('.session-list')
-    var item = document.createElement('div')
-    item.className = 'session-item active'
-    item.dataset.sessionId = id
-
-    var dir = shortPath(meta.cwd)
-    item.innerHTML =
-      '<div class="session-name"><span class="session-dot running"></span>' + name + '</div>' +
-      '<div class="session-meta">' + dir + ' &middot; ' + meta.model + '</div>'
-
-    item.addEventListener('click', function() { switchSession(id) })
-
-    $$('.session-item').forEach(function(i) { i.classList.remove('active') })
-    list.appendChild(item)
-  }
 
   // ── Placeholder ──
   function showPlaceholder() {
@@ -301,28 +284,151 @@
     return date.toLocaleDateString([], {month: 'short', day: 'numeric'})
   }
 
-  // ── Load and render history ──
+  // ── Load and render history by project groups ──
   async function loadHistory() {
     var historyList = $('.history-list')
     if (!historyList) return
 
     try {
-      const history = await window.api.listHistory()
-      if (!history || history.length === 0) {
+      const result = await window.api.listHistory()
+      const projects = result && result.projects ? result.projects : []
+      if (projects.length === 0) {
         historyList.innerHTML = '<div style="padding: 12px; font-size: 11px; color: var(--text-muted); text-align: center;">No history found</div>'
         return
       }
 
       historyList.innerHTML = ''
-      history.forEach(function(item) {
-        addHistoryItem(item)
+      projects.forEach(function(project, index) {
+        // Default: first project expanded, others collapsed
+        const expanded = index === 0
+        addProjectGroup(project, expanded)
       })
     } catch (e) {
       console.error('Failed to load history:', e)
     }
   }
 
-  // ── Add history item to sidebar ──
+  // ── Add a project group with collapsible sessions ──
+  function addProjectGroup(project, expanded) {
+    var historyList = $('.history-list')
+    var group = document.createElement('div')
+    group.className = 'project-group ' + (expanded ? 'expanded' : 'collapsed')
+    group.dataset.encodedName = project.encodedName
+
+    // Project header with toggle
+    var header = document.createElement('div')
+    header.className = 'project-header'
+    header.innerHTML = `
+      <span class="project-toggle">▼</span>
+      <span class="project-name">${shortPath(project.fullPath)}</span>
+      <span class="project-count">${project.sessionCount}</span>
+    `
+
+    // Sessions container
+    var sessionsContainer = document.createElement('div')
+    sessionsContainer.className = 'project-sessions'
+
+    // Add all sessions for this project
+    project.sessions.forEach(function(session) {
+      addSessionToGroup(session, project.encodedName, sessionsContainer)
+    })
+
+    // Toggle expand/collapse on click
+    header.addEventListener('click', function() {
+      const isCollapsed = group.classList.contains('collapsed')
+      group.classList.toggle('collapsed', !isCollapsed)
+      group.classList.toggle('expanded', isCollapsed)
+    })
+
+    group.appendChild(header)
+    group.appendChild(sessionsContainer)
+    historyList.appendChild(group)
+  }
+
+  // ── Add a single session item to a project group ──
+  function addSessionToGroup(history, projectEncoded, container) {
+    var item = document.createElement('div')
+    item.className = 'history-item'
+    item.dataset.cwd = history.cwd || ''
+    item.dataset.sessionId = history.sessionId
+
+    var dir = shortPath(history.cwd || '')
+    var name = history.cwd ? history.cwd.split('/').pop() : 'unknown'
+    var date = formatHistoryDate(history.startedAt)
+
+    // Model class for color dot
+    function getModelClass(model) {
+      if (!model) return ''
+      const lower = model.toLowerCase()
+      if (lower.includes('opus')) return 'opus'
+      if (lower.includes('sonnet')) return 'sonnet'
+      if (lower.includes('haiku')) return 'haiku'
+      return 'sonnet'
+    }
+
+    var modelDot = history.model ? `<span class="history-model-dot model-dot ${getModelClass(history.model)}"></span>` : ''
+
+    // Build meta parts
+    var metaParts = []
+    if (dir && !history.title) metaParts.push(dir)
+    if (history.messageCount) metaParts.push(`${history.messageCount} 条消息`)
+    metaParts.push(date)
+
+    var html = ''
+    if (history.title) {
+      // Have AI-generated title - show it as the main heading
+      html =
+        '<div class="history-title">' + modelDot + history.title + '</div>' +
+        '<div class="history-meta">' + metaParts.join(' &middot; ') + '</div>'
+    } else {
+      // No title - fallback to original display
+      html =
+        '<div class="history-cwd">' + modelDot + name + '</div>' +
+        '<div class="history-meta">' + metaParts.join(' &middot; ') + '</div>'
+    }
+
+    item.innerHTML = html + '<span class="history-delete" title="Delete">×</span>'
+
+    // Click on body to open session
+    item.addEventListener('click', function(e) {
+      if (!e.target.classList.contains('history-delete') && history.cwd) {
+        spawnSession({
+          cwd: history.cwd,
+          historySessionId: history.sessionId
+        })
+      }
+    })
+
+    // Delete button
+    var deleteBtn = item.querySelector('.history-delete')
+    deleteBtn.addEventListener('click', async function(e) {
+      e.stopPropagation()
+      const displayName = history.title || (history.cwd ? history.cwd.split('/').pop() : 'unknown')
+      if (!confirm('确认删除此历史会话吗？\n\n' + displayName)) {
+        return
+      }
+      try {
+        await window.api.deleteHistory({
+          projectEncoded: projectEncoded,
+          sessionId: history.sessionId
+        })
+        item.remove()
+        // If this was the last session in the project, remove the project group
+        const sessions = container.querySelectorAll('.history-item')
+        if (sessions.length === 0) {
+          const group = container.parentNode
+          if (group) group.remove()
+        }
+      } catch (e) {
+        console.error('Failed to delete history:', e)
+        alert('删除失败: ' + e.message)
+      }
+    })
+
+    container.appendChild(item)
+  }
+
+  // ── Add history item to sidebar ── (keep for compatibility, not used anymore)
   function addHistoryItem(history) {
     var list = $('.history-list')
     var item = document.createElement('div')
@@ -332,12 +438,39 @@
     var dir = shortPath(history.cwd || '')
     var name = history.cwd ? history.cwd.split('/').pop() : 'unknown'
     var date = formatHistoryDate(history.startedAt)
-    var filename = history.pid + '.json'
 
-    item.innerHTML =
-      '<div class="history-cwd">' + name + '</div>' +
-      '<div class="history-meta">' + dir + ' &middot; ' + date + '</div>' +
-      '<span class="history-delete" title="Delete">×</span>'
+    // Model class for color dot
+    function getModelClass(model) {
+      if (!model) return ''
+      const lower = model.toLowerCase()
+      if (lower.includes('opus')) return 'opus'
+      if (lower.includes('sonnet')) return 'sonnet'
+      if (lower.includes('haiku')) return 'haiku'
+      return 'sonnet'
+    }
+
+    var modelDot = history.model ? `<span class="history-model-dot model-dot ${getModelClass(history.model)}"></span>` : ''
+
+    // Build meta parts
+    var metaParts = []
+    if (dir) metaParts.push(dir)
+    if (history.messageCount) metaParts.push(`${history.messageCount} 条消息`)
+    metaParts.push(date)
+
+    var html = ''
+    if (history.title) {
+      // Have AI-generated title - show it as the main heading
+      html =
+        '<div class="history-title">' + modelDot + history.title + '</div>' +
+        '<div class="history-meta">' + metaParts.join(' &middot; ') + '</div>'
+    } else {
+      // No title - fallback to original display
+      html =
+        '<div class="history-cwd">' + modelDot + name + '</div>' +
+        '<div class="history-meta">' + metaParts.join(' &middot; ') + '</div>'
+    }
+
+    item.innerHTML = html + '<span class="history-delete" title="Delete">×</span>'
 
     // Click on body to open session
     item.addEventListener('click', function(e) {
@@ -357,7 +490,7 @@
         return
       }
       try {
-        await window.api.deleteHistory(filename)
+        await window.api.deleteHistory(history.pid + '.json')
         item.remove()
       } catch (e) {
         console.error('Failed to delete history:', e)
@@ -381,11 +514,6 @@
       var session = sessions.get(id)
       if (session) {
         session.terminal.write('\r\n\x1b[90m[Process exited with code ' + exitCode + ']\x1b[0m\r\n')
-        var dot = $(`.session-item[data-session-id="${id}"] .session-dot`)
-        if (dot) {
-          dot.classList.remove('running')
-          dot.classList.add('idle')
-        }
       }
     })
 

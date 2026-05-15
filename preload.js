@@ -36,5 +36,5 @@ contextBridge.exposeInMainWorld('api', {
   },
 
   platform: process.platform,
-  defaultCwd: process.env.HOME + '/project/claude-code-gui',
+  defaultCwd: process.env.HOME + '/claude_code_dir',
 })

@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "main": "src/main/index.js",
   "scripts": {
-    "start": "ELECTRON_RUN_AS_NODE= electron .",
-    "dev": "ELECTRON_RUN_AS_NODE= electron . --remote-debugging-port=9333 --remote-allow-origins=*"
+    "start": "unset ELECTRON_RUN_AS_NODE && electron .",
+    "dev": "unset ELECTRON_RUN_AS_NODE && electron . --remote-debugging-port=9333 --remote-allow-origins=*"
   },
   "dependencies": {
     "@xterm/xterm": "^6.0.0",
