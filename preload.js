@@ -11,6 +11,9 @@ const ch = {
   PTY_RESIZE: 'pty:resize',
   PTY_DATA: 'pty:data',
   PTY_EXIT: 'pty:exit',
+  PROVIDER_LOAD: 'provider:load',
+  PROVIDER_SAVE: 'provider:save',
+  PROVIDER_GET_CURRENT: 'provider:get-current',
 }
 
 contextBridge.exposeInMainWorld('api', {
@@ -34,6 +37,11 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.on(ch.PTY_EXIT, handler)
     return () => ipcRenderer.removeListener(ch.PTY_EXIT, handler)
   },
+
+  // Provider configuration
+  loadProviderConfig: () => ipcRenderer.invoke(ch.PROVIDER_LOAD),
+  saveProviderConfig: (...args) => ipcRenderer.invoke(ch.PROVIDER_SAVE, ...args),
+  getCurrentProvider: () => ipcRenderer.invoke(ch.PROVIDER_GET_CURRENT),
 
   platform: process.platform,
   defaultCwd: process.env.HOME + '/claude_code_dir',

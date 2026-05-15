@@ -3,6 +3,7 @@ const path = require('path')
 const fs = require('fs')
 const os = require('os')
 const ptyManager = require('./pty')
+const providerConfig = require('./provider-config')
 const ch = require('../shared/channels')
 
 let mainWindow
@@ -365,10 +366,40 @@ function registerIpc() {
       return { success: false, error: e.message }
     }
   })
+
+  // Load provider configuration
+  ipcMain.handle(ch.PROVIDER_LOAD, () => {
+    return providerConfig.loadConfig()
+  })
+
+  // Save provider configuration
+  // shouldUpdateClaudeSettings = true only when modifying provider config (not just changing model)
+  ipcMain.handle(ch.PROVIDER_SAVE, (event, config, shouldUpdateClaudeSettings) => {
+    if (providerConfig.validateConfig(config)) {
+      const success = providerConfig.saveConfig(config)
+      if (shouldUpdateClaudeSettings === true) {
+        console.log('Updating Claude Code settings.json because provider config changed')
+        providerConfig.updateClaudeSettingsEnv()
+      } else {
+        console.log('Skipping update to Claude Code settings.json (only model changed)')
+      }
+      return { success }
+    }
+    return { success: false, error: 'Invalid configuration' }
+  })
+
+  // Get current provider and model
+  ipcMain.handle(ch.PROVIDER_GET_CURRENT, () => {
+    const provider = providerConfig.getCurrentProvider()
+    const model = providerConfig.getCurrentModel()
+    return { provider, model }
+  })
 }
 
 app.whenReady().then(() => {
   registerIpc()
+  // Sync provider config to Claude Code settings.json on startup
+  providerConfig.updateClaudeSettingsEnv()
   createWindow()
 
   app.on('activate', () => {

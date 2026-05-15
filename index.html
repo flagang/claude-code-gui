@@ -531,6 +531,187 @@
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--bg-active); border-radius: 3px; }
     ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .modal-overlay.active {
+      display: flex;
+    }
+    .modal-container {
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      width: 90%;
+      max-width: 600px;
+      max-height: 80vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+    .modal-container.modal-small {
+      max-width: 480px;
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-secondary);
+    }
+    .modal-header h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .modal-body {
+      padding: 20px;
+      overflow-y: auto;
+    }
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      background: var(--bg-secondary);
+    }
+
+    /* ── Provider List Item ── */
+    .provider-item {
+      display: flex;
+      align-items: center;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 8px;
+      background: var(--bg-secondary);
+      transition: all 0.15s;
+    }
+    .provider-item.active {
+      border-color: var(--accent);
+      background: var(--bg-hover);
+    }
+    .provider-item-info {
+      flex: 1;
+    }
+    .provider-item-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 2px;
+    }
+    .provider-item-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .provider-item-actions {
+      display: flex;
+      gap: 4px;
+    }
+    .provider-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 8px;
+      background: var(--text-muted);
+    }
+    .provider-item.active .provider-dot {
+      background: var(--green);
+    }
+
+    /* ── Form Groups ── */
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .form-group input:focus,
+    .form-group textarea:focus {
+      border-color: var(--accent);
+    }
+    .form-group textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+
+    /* ── Model Dropdown ── */
+    .model-dropdown {
+      position: absolute;
+      bottom: 50px;
+      left: 12px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+      min-width: 200px;
+      max-height: 300px;
+      overflow-y: auto;
+      display: none;
+      z-index: 100;
+    }
+    .model-dropdown.active {
+      display: block;
+    }
+    .model-dropdown-item {
+      padding: 8px 12px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .model-dropdown-item:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+    .model-dropdown-item.active {
+      background: var(--bg-active);
+      color: var(--text-primary);
+    }
+    .model-dropdown-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 4px 0;
+    }
+    .model-dropdown-provider {
+      padding: 6px 12px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      background: var(--bg-secondary);
+    }
   </style>
 </head>
 <body>
@@ -595,7 +776,7 @@
         <div class="toolbar-separator"></div>
         <div class="toolbar-group">
           <button class="btn-icon" title="Help">&#8253;</button>
-          <button class="btn-icon" title="Config">&#9881;</button>
+          <button class="btn-icon" title="Config" id="open-config-btn">&#9881;</button>
         </div>
         <div class="toolbar-spacer"></div>
         <div class="toolbar-group">
@@ -617,7 +798,70 @@
 
   <!-- xterm.js -->
   <script src="node_modules/@xterm/xterm/lib/xterm.js"></script>
-  <!-- Renderer app -->
+
+  <!-- Provider Configuration Modal -->
+  <div class="modal-overlay" id="provider-modal">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3>AI 供应商配置</h3>
+        <button class="btn-icon modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="provider-list" id="provider-list">
+          <!-- Dynamic provider items -->
+        </div>
+        <button class="btn btn-primary" id="add-provider-btn" style="margin-top: 12px;">+ 添加供应商</button>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="cancel-provider">取消</button>
+        <button class="btn btn-primary" id="save-provider">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add/Edit Provider Form Modal -->
+  <div class="modal-overlay" id="provider-form-modal">
+    <div class="modal-container modal-small">
+      <div class="modal-header">
+        <h3 id="provider-form-title">添加供应商</h3>
+        <button class="btn-icon modal-close-form">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>名称</label>
+          <input type="text" id="provider-name" placeholder="Anthropic Official">
+        </div>
+        <div class="form-group">
+          <label>API Key / Auth Token</label>
+          <input type="password" id="provider-apiKey" placeholder="sk-xxxxxx">
+        </div>
+        <div class="form-group">
+          <label>Base URL</label>
+          <input type="text" id="provider-baseUrl" placeholder="https://api.anthropic.com">
+        </div>
+        <div class="form-group">
+          <label>默认模型</label>
+          <input type="text" id="provider-defaultModel" placeholder="claude-3-5-sonnet-latest">
+        </div>
+        <div class="form-group">
+          <label>模型列表（一行一个）</label>
+          <textarea id="provider-models" placeholder="claude-3-5-sonnet-latest&#10;claude-3-opus-latest&#10;claude-3-haiku-latest"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="cancel-provider-form">取消</button>
+        <button class="btn btn-primary" id="save-provider-form">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Model Dropdown -->
+  <div class="model-dropdown" id="model-dropdown"></div>
+
+  <!-- Renderer modules -->
+  <script src="src/renderer/provider-modal.js"></script>
+  <script src="src/renderer/model-selector.js"></script>
+  <!-- Main app -->
   <script src="src/renderer/app.js"></script>
 
 </body>

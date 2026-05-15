@@ -1,6 +1,7 @@
 const pty = require('node-pty')
 const path = require('path')
 const os = require('os')
+const providerConfig = require('./provider-config')
 
 const sessions = new Map()
 
@@ -18,6 +19,13 @@ function spawnSession(id, options = {}) {
   const shell = process.env.SHELL || '/bin/zsh'
   const env = { ...process.env }
 
+  // Inject provider environment variables
+  const providerEnv = providerConfig.getCurrentEnv()
+  Object.assign(env, providerEnv)
+
+  // If no model specified in options, use current default from config
+  const effectiveModel = model || providerConfig.getCurrentModel()
+
   // 构建命令：先 cd 到目录，然后运行 claude
   let commandParts = []
   if (cwd) {
@@ -27,7 +35,7 @@ function spawnSession(id, options = {}) {
   }
 
   let claudeCmd = 'claude'
-  if (model) claudeCmd += ` --model ${model}`
+  if (effectiveModel) claudeCmd += ` --model ${effectiveModel}`
   if (resume) claudeCmd += ` --resume ${resume}`
   commandParts.push(claudeCmd)
 
@@ -47,7 +55,7 @@ function spawnSession(id, options = {}) {
     pid: ptyProcess.pid,
     pty: ptyProcess,
     cwd,
-    model: model || 'sonnet',
+    model: effectiveModel || 'sonnet',
     createdAt: Date.now(),
   }
 

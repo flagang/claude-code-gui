@@ -6,7 +6,9 @@
 
   // ── State ──
   const sessions = new Map() // id -> { terminal, element, meta }
+  window.sessions = sessions // expose globally for model-selector
   let activeSessionId = null
+  window.activeSessionId = null // expose globally for model-selector
   let selectedProjectCwd = null // 当前选中的项目目录
 
   // ── DOM helpers ──
@@ -87,6 +89,8 @@
     options = options || {}
     options.cwd = options.cwd || selectedProjectCwd || defaultCwd()
     const historySessionId = options.historySessionId
+    const historyModel = options.model
+    const historyTitle = options.title
     // Resume existing Claude session from history
     if (historySessionId) {
       options.resume = historySessionId
@@ -103,8 +107,20 @@
       }
     }
 
+    // Pass model from history if available
+    if (historyModel) {
+      options.model = historyModel
+    }
+
     const meta = await window.api.spawnSession(options)
     const id = meta.id
+    // Store current model in meta (main process passes back the effective model)
+    meta.historySessionId = historySessionId
+    meta.currentModel = meta.model
+    // Store title from history if available
+    if (historyTitle) {
+      meta.title = historyTitle
+    }
 
     // Hide placeholder
     const placeholder = $('.terminal-placeholder')
@@ -133,7 +149,8 @@
     sessions.set(id, { terminal: term, element: container, meta: meta })
 
     // Add tab
-    const name = options.name || meta.cwd.split('/').pop() || 'session'
+    // Use session title if available (from history), otherwise use directory name
+    const name = meta.title || options.name || meta.cwd.split('/').pop() || 'session'
     addTab(id, name)
 
     // Switch to it
@@ -179,6 +196,7 @@
 
     session.element.style.display = 'block'
     activeSessionId = id
+    window.activeSessionId = id
 
     // Update tabs
     $$('.tab').forEach(function(tab) {
@@ -192,6 +210,11 @@
     }
     if (items[1]) {
       items[1].textContent = session.meta.cwd
+    }
+
+    // Update model selector display to current session's model
+    if (window.modelSelector && session.meta.currentModel) {
+      window.modelSelector.setCurrentModel(session.meta.currentModel)
     }
 
     // Focus & refit
@@ -413,7 +436,9 @@
       if (!e.target.classList.contains('history-delete') && history.cwd) {
         spawnSession({
           cwd: history.cwd,
-          historySessionId: history.sessionId
+          historySessionId: history.sessionId,
+          model: history.model,
+          title: history.title
         })
       }
     })
@@ -492,7 +517,9 @@
       if (!e.target.classList.contains('history-delete') && history.cwd) {
         spawnSession({
           cwd: history.cwd,
-          historySessionId: history.sessionId
+          historySessionId: history.sessionId,
+          model: history.model,
+          title: history.title
         })
       }
     })

@@ -13,4 +13,8 @@ module.exports = {
   PTY_RESIZE: 'pty:resize',
   PTY_DATA: 'pty:data',
   PTY_EXIT: 'pty:exit',
+  // Provider configuration
+  PROVIDER_LOAD: 'provider:load',
+  PROVIDER_SAVE: 'provider:save',
+  PROVIDER_GET_CURRENT: 'provider:get-current',
 }
