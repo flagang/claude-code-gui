@@ -146,14 +146,41 @@ function registerIpc() {
                 }
 
                 // Extract first user message if no aiTitle yet
-                if (!aiTitle && !firstUserMessage && entry.type === 'user' && Array.isArray(entry.content)) {
-                  const textContent = entry.content
-                    .filter(block => block.type === 'text')
-                    .map(block => block.text)
-                    .join('\n')
-                    .trim()
+                if (!aiTitle && !firstUserMessage && entry.type === 'user') {
+                  let textContent = ''
+
+                  // Try different possible locations for user message text
+                  if (entry.message && entry.message.content) {
+                    if (Array.isArray(entry.message.content)) {
+                      textContent = entry.message.content
+                        .filter(block => block.type === 'text')
+                        .map(block => block.text)
+                        .join('\n')
+                        .trim()
+                    } else if (typeof entry.message.content === 'string') {
+                      textContent = entry.message.content.trim()
+                    }
+                  } else if (Array.isArray(entry.content)) {
+                    textContent = entry.content
+                      .filter(block => block.type === 'text')
+                      .map(block => block.text)
+                      .join('\n')
+                      .trim()
+                  } else if (typeof entry.content === 'string') {
+                    textContent = entry.content.trim()
+                  } else if (entry.display && typeof entry.display === 'string') {
+                    // Fallback to display field if available
+                    textContent = entry.display.trim()
+                  } else if (entry.lastPrompt && typeof entry.lastPrompt === 'string') {
+                    // Fallback to lastPrompt
+                    textContent = entry.lastPrompt.trim()
+                  }
+
                   if (textContent) {
-                    firstUserMessage = textContent
+                    // Truncate to 60 chars for display
+                    firstUserMessage = textContent.length > 60
+                      ? textContent.substring(0, 60) + '...'
+                      : textContent
                   }
                 }
 
