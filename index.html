@@ -240,9 +240,17 @@
       cursor: pointer;
       transition: background 0.15s;
       user-select: none;
+      border: 1px solid transparent;
     }
     .project-header:hover {
       background: var(--bg-hover);
+    }
+    .project-header.selected {
+      background: var(--bg-active);
+      border-color: var(--accent);
+    }
+    .project-header.selected .project-name {
+      color: var(--accent);
     }
     .project-toggle {
       font-size: 10px;

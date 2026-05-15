@@ -7,6 +7,7 @@
   // ── State ──
   const sessions = new Map() // id -> { terminal, element, meta }
   let activeSessionId = null
+  let selectedProjectCwd = null // 当前选中的项目目录
 
   // ── DOM helpers ──
   const $ = (sel) => document.querySelector(sel)
@@ -84,7 +85,7 @@
   // ── Spawn a new session ──
   async function spawnSession(options) {
     options = options || {}
-    options.cwd = options.cwd || defaultCwd()
+    options.cwd = options.cwd || selectedProjectCwd || defaultCwd()
     const historySessionId = options.historySessionId
     // Resume existing Claude session from history
     if (historySessionId) {
@@ -314,6 +315,7 @@
     var group = document.createElement('div')
     group.className = 'project-group ' + (expanded ? 'expanded' : 'collapsed')
     group.dataset.encodedName = project.encodedName
+    group.dataset.cwd = project.fullPath
 
     // Project header with toggle
     var header = document.createElement('div')
@@ -333,8 +335,25 @@
       addSessionToGroup(session, project.encodedName, sessionsContainer)
     })
 
-    // Toggle expand/collapse on click
+    // Select, expand and collapse on click
     header.addEventListener('click', function() {
+      // Select this project
+      selectedProjectCwd = project.fullPath
+
+      // Remove selected class from all headers
+      $$('.project-header').forEach(h => h.classList.remove('selected'))
+      // Add selected class to this header
+      header.classList.add('selected')
+
+      // Close all other project groups
+      $$('.project-group').forEach(g => {
+        if (g !== group) {
+          g.classList.remove('expanded')
+          g.classList.add('collapsed')
+        }
+      })
+
+      // Toggle this group
       const isCollapsed = group.classList.contains('collapsed')
       group.classList.toggle('collapsed', !isCollapsed)
       group.classList.toggle('expanded', isCollapsed)
@@ -403,10 +422,6 @@
     var deleteBtn = item.querySelector('.history-delete')
     deleteBtn.addEventListener('click', async function(e) {
       e.stopPropagation()
-      const displayName = history.title || (history.cwd ? history.cwd.split('/').pop() : 'unknown')
-      if (!confirm('确认删除此历史会话吗？\n\n' + displayName)) {
-        return
-      }
       try {
         await window.api.deleteHistory({
           projectEncoded: projectEncoded,

@@ -116,6 +116,7 @@ function registerIpc() {
             const sessionId = file.name.replace(/\.jsonl$/, '')
             let startedAt = 0
             let aiTitle = null
+            let firstUserMessage = null
             let lastModel = null
             let lastGitBranch = null
             let messageCount = 0
@@ -142,6 +143,18 @@ function registerIpc() {
                 // Extract AI-generated title
                 if (entry.type === 'ai-title' && entry.aiTitle) {
                   aiTitle = entry.aiTitle
+                }
+
+                // Extract first user message if no aiTitle yet
+                if (!aiTitle && !firstUserMessage && entry.type === 'user' && Array.isArray(entry.content)) {
+                  const textContent = entry.content
+                    .filter(block => block.type === 'text')
+                    .map(block => block.text)
+                    .join('\n')
+                    .trim()
+                  if (textContent) {
+                    firstUserMessage = textContent
+                  }
                 }
 
                 // Extract model from assistant messages (keep last one)
@@ -187,7 +200,7 @@ function registerIpc() {
               sessionId,
               cwd,
               startedAt,
-              title: aiTitle,
+              title: aiTitle || firstUserMessage,
               model: lastModel,
               messageCount,
               gitBranch: lastGitBranch,
