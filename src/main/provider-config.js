@@ -143,7 +143,7 @@ function updateClaudeSettingsEnv() {
       const content = fs.readFileSync(claudeSettingsPath, 'utf8')
       claudeSettings = JSON.parse(content)
     } catch (e) {
-      console.error('Failed to parse Claude Code settings.json, creating new:', e)
+      console.error('Failed to parse Claude Code settings.json:', e)
       claudeSettings = {}
     }
   }
@@ -153,28 +153,40 @@ function updateClaudeSettingsEnv() {
     claudeSettings.env = {}
   }
 
-  // 模型槽位映射 - 最多前5个模型，对应 Claude Code 的自定义模型位置
-  // 顺序: Opus, Sonnet, Haiku, Custom 1, Custom 2
-  const slots = [
-    { prefix: 'ANTHROPIC_DEFAULT_OPUS_MODEL' },
-    { prefix: 'ANTHROPIC_DEFAULT_SONNET_MODEL' },
-    { prefix: 'ANTHROPIC_DEFAULT_HAIKU_MODEL' },
-    { prefix: 'ANTHROPIC_CUSTOM_MODEL_OPTION' },
-    { prefix: 'ANTHROPIC_CUSTOM_MODEL_OPTION2' },
+  const models = provider.models
+  const maxSlots = 5
+
+  // 5个模型槽位，按顺序映射（Opus, Sonnet, Haiku, Custom 1, Custom 2）
+  const slotPrefixes = [
+    'ANTHROPIC_DEFAULT_OPUS_MODEL',
+    'ANTHROPIC_DEFAULT_SONNET_MODEL',
+    'ANTHROPIC_DEFAULT_HAIKU_MODEL',
+    'ANTHROPIC_CUSTOM_MODEL_OPTION',
+    'ANTHROPIC_CUSTOM_MODEL_OPTION2',
   ]
 
-  // 只取前5个模型填充
-  const modelsToSet = provider.models.slice(0, 5)
+  // ANTHROPIC_MODEL 始终设置为第一个模型
+  claudeSettings.env['ANTHROPIC_MODEL'] = models[0]
 
-  // 填充每个槽位
-  modelsToSet.forEach((modelName, index) => {
-    if (index >= slots.length) return
-    const slot = slots[index]
-    claudeSettings.env[slot.prefix] = modelName
-    claudeSettings.env[slot.prefix + '_NAME'] = modelName
-    // DESCRIPTION 也用模型名，Claude Code 会显示它
-    claudeSettings.env[slot.prefix + '_DESCRIPTION'] = modelName
-  })
+  // 按顺序填充每个槽位，多余的清理
+  for (let i = 0; i < maxSlots; i++) {
+    const prefix = slotPrefixes[i]
+    if (i < models.length) {
+      // 有模型则填充
+      claudeSettings.env[prefix] = models[i]
+      claudeSettings.env[prefix + '_NAME'] = models[i]
+      claudeSettings.env[prefix + '_DESCRIPTION'] = models[i]
+      // CUSTOM_MODEL_OPTION 额外设置 NAME 字段（Claude Code 需要）
+      if (prefix === 'ANTHROPIC_CUSTOM_MODEL_OPTION') {
+        claudeSettings.env[prefix + '_NAME'] = models[i]
+      }
+    } else {
+      // 没有模型则清理该槽位所有相关 env 变量
+      delete claudeSettings.env[prefix]
+      delete claudeSettings.env[prefix + '_NAME']
+      delete claudeSettings.env[prefix + '_DESCRIPTION']
+    }
+  }
 
   // 把当前供应商的 ANTHROPIC_AUTH_TOKEN 和 ANTHROPIC_BASE_URL 也同步过去
   if (provider.apiKey) {
@@ -187,7 +199,7 @@ function updateClaudeSettingsEnv() {
   // 保存回文件
   try {
     fs.writeFileSync(claudeSettingsPath, JSON.stringify(claudeSettings, null, 2), 'utf8')
-    console.log('Updated Claude Code settings.json with provider models')
+    console.log(`Updated Claude Code settings.json with ${models.length} models`)
     return true
   } catch (e) {
     console.error('Failed to save Claude Code settings.json:', e)

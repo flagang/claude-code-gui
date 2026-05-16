@@ -150,8 +150,12 @@
 
     // Add tab
     // Use session title if available (from history), otherwise use directory name
-    const name = meta.title || options.name || meta.cwd.split('/').pop() || 'session'
-    addTab(id, name)
+    // Truncate to 60 chars to match history display
+    let tabName = meta.title || options.name || meta.cwd.split('/').pop() || 'session'
+    if (tabName.length > 60) {
+      tabName = tabName.substring(0, 60) + '...'
+    }
+    addTab(id, tabName)
 
     // Switch to it
     switchSession(id)
@@ -258,7 +262,7 @@
     var tab = document.createElement('div')
     tab.className = 'tab active'
     tab.dataset.sessionId = id
-    tab.innerHTML = name + '<span class="tab-close">&times;</span>'
+    tab.innerHTML = '<span class="tab-label">' + name + '</span><span class="tab-close">&times;</span>'
 
     tab.addEventListener('click', function(e) {
       if (e.target.classList.contains('tab-close')) {

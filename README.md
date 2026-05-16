@@ -1,3 +1,5 @@
+> ⚠️ **注意：Claude Code 的 `/model` 命令会修改 `~/.claude/settings.json` 文件，导致工具栏显示的当前模型可能与实际不一致。工具栏模型选择器仅用于发送 `/model` 切换命令，不保证显示状态与 Claude Code 内部状态同步。**
+
 # Claude Code GUI
 
 一个 macOS 原生风格的 Claude Code 桌面客户端，为 Claude Code CLI 提供图形化多会话管理界面。
@@ -6,11 +8,11 @@
 
 ### 多会话管理
 - 基于 **node-pty** 启动独立的 Claude Code 进程，每个会话拥有独立 PTY
-- 顶部标签栏快速切换会话，支持关闭单个会话
+- 顶部标签栏快速切换会话（固定宽度 150px），支持关闭单个会话
 - 左侧侧边栏展示**活跃会话**和**历史会话**两个分区
-- 自动发现 `~/.claude/sessions/` 下的历史会话，按时间倒序展示
-- 点击历史会话可快速在对应工作目录新建会话
-- 点击侧边栏会话可快速切换
+- 自动发现 `~/.claude/projects/` 下的历史会话，按项目分组、按时间倒序展示
+- 历史会话支持 AI 标题显示，无标题时回退显示第一条用户消息（截断 60 字符）
+- 点击历史会话可快速在对应工作目录新建会话并恢复上下文
 - 支持 "New Session" / "New Tab" 两种方式创建会话
 
 ### 终端交互
@@ -18,6 +20,26 @@
 - 手动适配窗口大小（无需第三方 addon），窗口 resize 自动更新 PTY 尺寸
 - 完整支持交互式输入（光标、退格、方向键等）
 - 会话切换时保留终端回滚历史
+
+### 多供应商配置
+- 支持配置多个 AI 供应商（Anthropic、豆包、Gemini、千问等）
+- 每个供应商可独立设置 API Key、Base URL、默认模型、自定义模型列表
+- 配置保存在 `~/.claude/claude-code-gui/settings.json`
+- PTY 启动时自动注入当前供应商的 `ANTHROPIC_AUTH_TOKEN` 和 `ANTHROPIC_BASE_URL`
+- 同步更新 Claude Code 原生 `~/.claude/settings.json` 的环境变量配置
+
+### 工具栏模型选择器
+- 工具栏显示当前模型（带彩色状态点：Opus/Sonnet/Haiku）
+- 下拉菜单展示当前供应商的所有模型列表
+- 选择模型后自动向当前会话发送 `/model {name}` 命令并自动回车确认
+- 切换标签页时自动同步工具栏显示为对应会话的模型
+
+### 历史会话增强
+- 从 `.jsonl` 文件解析会话元数据（模型、git 分支、消息数等）
+- 恢复历史会话时在终端打印消息历史
+- 无确认直接删除历史会话
+- 项目目录可点击选中、高亮显示，点击目录自动展开并关闭其他目录
+- 新会话默认使用选中的项目目录
 
 ### macOS 原生体验
 - 隐藏标题栏 + 原生拖动区域
@@ -27,9 +49,7 @@
 
 ## 📋 待实现功能
 
-- [ ] 工具栏模型选择器（切换 opus/sonnet/haiku）
 - [ ] 命令面板 (`Cmd+Shift+P`)
-- [ ] 配置面板（可视化编辑 `~/.claude/settings.json`）
 - [ ] 浅色主题跟随系统切换
 
 ## 安装与运行
@@ -69,11 +89,14 @@ claude-code-gui/
 ├── src/
 │   ├── main/
 │   │   ├── index.js        # Electron 主进程入口，IPC handlers 注册
-│   │   └── pty.js          # node-pty 会话管理 (spawn/kill/write/resize)
+│   │   ├── pty.js          # node-pty 会话管理 (spawn/kill/write/resize)
+│   │   └── provider-config.js  # 供应商配置读写、环境变量管理
 │   ├── renderer/
-│   │   └── app.js          # 渲染进程逻辑，xterm.js 集成，UI 交互
+│   │   ├── app.js          # 渲染进程逻辑，xterm.js 集成，UI 交互
+│   │   ├── model-selector.js   # 工具栏模型选择器下拉菜单
+│   │   └── provider-model.js   # 供应商配置模态框 UI
 │   └── shared/
-│       └── channels.js     # IPC 通道名称（当前内联也不影响，保留结构）
+│       └── channels.js     # IPC 通道常量定义
 ```
 
 ## 技术栈
@@ -91,6 +114,13 @@ claude-code-gui/
 - **最小化依赖**：只保留核心依赖，避免引入大型框架
 - **原生优先**：使用 Electron 原生 macOS 特性，体验一致
 - **纯 JS 开发**：无需编译，直接运行，易于修改
+
+## 数据流
+
+```
+Renderer (用户输入) → contextBridge → ipcRenderer → ipcMain → node-pty → Claude Code CLI
+Claude Code CLI → node-pty (onData) → ipcMain (send) → ipcRenderer (on) → xterm.js (write)
+```
 
 ## 调试
 
