@@ -1,0 +1,32 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Rebuild native modules
+        run: npx @electron/rebuild
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload Release Assets
+        run: |
+          gh release upload "${GITHUB_REF_NAME}" dist/*.dmg dist/*.zip --repo "${{ github.repository }}"
+        env:
+          GH_TOKEN: ${{ github.token }}
