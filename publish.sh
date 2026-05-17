@@ -7,6 +7,7 @@ echo "=== Claude Code GUI 打包脚本 ==="
 echo "清理 dist/..."
 rm -rf dist/
 
+nvm use
 # 安装依赖
 echo "安装依赖..."
 npm install
