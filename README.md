@@ -1,3 +1,13 @@
+> 💡 **Claude CLI 查找顺序**：启动时按以下顺序查找 `claude` 命令：
+> 1. `$PATH` 中的 `claude`（通过 `command -v claude`）
+> 2. `/usr/local/bin/claude`
+> 3. `/opt/homebrew/bin/claude`
+> 4. `~/.local/bin/claude`
+> 5. `~/.npm-global/bin/claude`
+> 6. `~/.nvm/versions/node/*/bin/claude`
+> 7. 通过 nvm 加载后查找
+> 8. 保底：直接调用 `claude`，由 shell 自行处理
+
 > ⚠️ **注意：Claude Code 的 `/model` 命令会修改 `~/.claude/settings.json` 文件，导致工具栏显示的当前模型可能与实际不一致。工具栏模型选择器仅用于发送 `/model` 切换命令，不保证显示状态与 Claude Code 内部状态同步。**
 
 # Claude Code GUI

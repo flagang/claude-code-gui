@@ -17,6 +17,7 @@ function findClaudePath() {
     // 常见的 node 全局 bin 路径
     '/usr/local/bin/claude',
     '/opt/homebrew/bin/claude',
+    path.join(os.homedir(), '.local', 'bin', 'claude'),
     path.join(os.homedir(), '.npm-global', 'bin', 'claude'),
     path.join(os.homedir(), 'node_modules', '.bin', 'claude'),
   ]
