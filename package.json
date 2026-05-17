@@ -1,14 +1,54 @@
 {
   "name": "claude-code-gui",
   "version": "0.1.0",
+  "description": "macOS native desktop client for Claude Code CLI with multi-session management",
+  "author": "flagang",
+  "license": "MIT",
   "main": "src/main/index.js",
   "scripts": {
     "start": "unset ELECTRON_RUN_AS_NODE && electron .",
-    "dev": "unset ELECTRON_RUN_AS_NODE && electron . --remote-debugging-port=9333 --remote-allow-origins=*"
+    "dev": "unset ELECTRON_RUN_AS_NODE && electron . --remote-debugging-port=9333 --remote-allow-origins=*",
+    "build": "electron-builder",
+    "build:dir": "electron-builder --dir",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "build": {
+    "appId": "com.claude-code-gui.app",
+    "productName": "Claude Code GUI",
+    "directories": {
+      "output": "dist"
+    },
+    "electronDist": "node_modules/electron/dist",
+    "files": [
+      "src/**/*",
+      "index.html",
+      "preload.js",
+      "package.json",
+      "node_modules/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "target": [
+        { "target": "dmg", "arch": ["arm64", "x64"] },
+        { "target": "zip", "arch": ["arm64", "x64"] }
+      ],
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
+      "darkModeSupport": true
+    },
+    "dmg": {
+      "title": "Claude Code GUI ${version}",
+      "contents": [
+        { "x": 130, "y": 220, "type": "file" },
+        { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
+      ]
+    }
   },
   "dependencies": {
     "@xterm/xterm": "^6.0.0",
-    "electron": "^28.3.3",
     "node-pty": "^1.1.0"
+  },
+  "devDependencies": {
+    "electron": "^28.3.3",
+    "electron-builder": "^26.8.1"
   }
 }

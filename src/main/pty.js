@@ -1,5 +1,6 @@
 const pty = require('node-pty')
 const path = require('path')
+const fs = require('fs')
 const os = require('os')
 const providerConfig = require('./provider-config')
 
@@ -25,6 +26,17 @@ function spawnSession(id, options = {}) {
 
   // If no model specified in options, use current default from config
   const effectiveModel = model || providerConfig.getCurrentModel()
+
+  // 确保工作目录存在
+  const targetCwd = cwd || os.homedir()
+  try {
+    if (!fs.existsSync(targetCwd)) {
+      fs.mkdirSync(targetCwd, { recursive: true })
+      console.log(`[SESSION ${id}] 创建目录: ${targetCwd}`)
+    }
+  } catch (e) {
+    console.error(`[SESSION ${id}] 无法创建目录 ${targetCwd}:`, e.message)
+  }
 
   // 构建命令：先 cd 到目录，然后运行 claude
   let commandParts = []
