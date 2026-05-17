@@ -5,7 +5,7 @@
 一个 macOS 原生风格的 Claude Code 桌面客户端，为 Claude Code CLI 提供图形化多会话管理界面。
 
 ![Claude Code GUI](screenshot.png)
-
+![Claude Code GUI](screenshot2.png)
 ## ✅ 已实现功能
 
 ### 多会话管理
