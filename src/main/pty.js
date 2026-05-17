@@ -6,6 +6,68 @@ const providerConfig = require('./provider-config')
 
 const sessions = new Map()
 
+function findClaudePath() {
+  // 尝试常见安装路径
+  const candidates = [
+    // nvm 路径
+    ...(process.env.NVM_DIR ? [
+      path.join(process.env.NVM_DIR, 'versions', 'node', process.version, 'bin', 'claude'),
+      path.join(process.env.NVM_DIR, 'versions', 'node', '*', 'bin', 'claude'),
+    ] : []),
+    // 常见的 node 全局 bin 路径
+    '/usr/local/bin/claude',
+    '/opt/homebrew/bin/claude',
+    path.join(os.homedir(), '.npm-global', 'bin', 'claude'),
+    path.join(os.homedir(), 'node_modules', '.bin', 'claude'),
+  ]
+
+  for (const candidate of candidates) {
+    if (candidate.includes('*')) continue // skip glob, use shell resolve
+    if (fs.existsSync(candidate)) return candidate
+  }
+
+  return null
+}
+
+// 缓存 claude 路径
+let cachedClaudePath = null
+
+function getClaudePath() {
+  if (cachedClaudePath) return cachedClaudePath
+
+  // 1. 优先从 PATH 找
+  try {
+    const result = require('child_process').execSync('command -v claude', { encoding: 'utf8', shell: '/bin/zsh' }).trim()
+    if (result && fs.existsSync(result)) {
+      cachedClaudePath = result
+      return result
+    }
+  } catch (e) { /* not found in PATH */ }
+
+  // 2. 从常见路径找
+  const found = findClaudePath()
+  if (found) {
+    cachedClaudePath = found
+    return found
+  }
+
+  // 3. 最后尝试通过 nvm 加载
+  try {
+    const nvmDir = process.env.NVM_DIR || path.join(os.homedir(), '.nvm')
+    const result = require('child_process').execSync(
+      `export NVM_DIR="${nvmDir}" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && command -v claude`,
+      { encoding: 'utf8', shell: '/bin/zsh' }
+    ).trim()
+    if (result && fs.existsSync(result)) {
+      cachedClaudePath = result
+      return result
+    }
+  } catch (e) { /* nvm resolve failed */ }
+
+  // 4. 保底：直接返回 claude，让 shell 自己处理
+  return 'claude'
+}
+
 function spawnSession(id, options = {}) {
   const cwd = options.cwd || os.homedir()
   const model = options.model || ''
@@ -46,7 +108,7 @@ function spawnSession(id, options = {}) {
     commandParts.push(`cd "${escapedCwd}"`)
   }
 
-  let claudeCmd = 'claude'
+  let claudeCmd = getClaudePath()
   if (effectiveModel) claudeCmd += ` --model ${effectiveModel}`
   if (resume) claudeCmd += ` --resume ${resume}`
   commandParts.push(claudeCmd)
