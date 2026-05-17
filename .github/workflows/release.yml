@@ -25,8 +25,12 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Upload Release Assets
+      - name: Create Release and Upload Assets
         run: |
-          gh release upload "${GITHUB_REF_NAME}" dist/*.dmg dist/*.zip --repo "${{ github.repository }}"
+          gh release create "${GITHUB_REF_NAME}" dist/*.dmg dist/*.zip \
+            --repo "${{ github.repository }}" \
+            --title "${GITHUB_REF_NAME}" \
+            --notes "自动构建发布 v${GITHUB_REF_NAME#v}" \
+            --verify-tag
         env:
           GH_TOKEN: ${{ github.token }}
